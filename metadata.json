@@ -1,0 +1,5 @@
+{
+  "name": "PYQ Chapter Extractor",
+  "description": "Extract specific chapter questions from previous year question links using AI.",
+  "requestFramePermissions": []
+}
