@@ -8,7 +8,7 @@ export interface Question {
   year: string | null;
 }
 
-export const extractQuestions = async (url: string, chapter: string, studentClass: string): Promise<Question[]> => {
+export const extractQuestions = async (url: string, chapter: string, studentClass: string, subject: string): Promise<Question[]> => {
   if (!API_KEY) {
     throw new Error("Gemini API key is missing. Please add it to your secrets.");
   }
@@ -17,7 +17,7 @@ export const extractQuestions = async (url: string, chapter: string, studentClas
   
   const prompt = `Analyze the content of the following URL: ${url}
   
-  Your task is to find and extract ALL the questions for Class: "${studentClass}" that belong to the chapter: "${chapter}".
+  Your task is to find and extract ALL the questions for Subject: "${subject}", Class: "${studentClass}" that belong to the chapter: "${chapter}".
   
   For each question found, you must:
   1. Extract the full question text exactly as it appears (it should be in Bengali).
@@ -27,7 +27,7 @@ export const extractQuestions = async (url: string, chapter: string, studentClas
   Return the results as a JSON array of objects with the following keys: "text", "difficulty", "year".
   If no questions are found, return an empty array [].
   
-  Note: The chapter name and questions are in Bengali (বাংলা). Please ensure accurate extraction and use ONLY Bengali for the text and difficulty fields.`;
+  Note: The chapter name, subject, and questions are in Bengali (বাংলা). Please ensure accurate extraction and use ONLY Bengali for the text and difficulty fields.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -111,14 +111,14 @@ export const getHint = async (question: string): Promise<string> => {
   }
 };
 
-export const generateImportantQuestions = async (chapter: string, studentClass: string): Promise<Question[]> => {
+export const generateImportantQuestions = async (chapter: string, studentClass: string, subject: string): Promise<Question[]> => {
   if (!API_KEY) {
     throw new Error("Gemini API key is missing.");
   }
 
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   
-  const prompt = `Generate 5 highly important and frequently asked questions for Class: "${studentClass}", Chapter: "${chapter}" that are NOT typically found in standard PYQ lists but are essential for mastering the topic.
+  const prompt = `Generate 5 highly important and frequently asked questions for Subject: "${subject}", Class: "${studentClass}", Chapter: "${chapter}" that are NOT typically found in standard PYQ lists but are essential for mastering the topic.
   
   For each question:
   1. Create a clear and challenging question in Bengali (বাংলা).
@@ -127,7 +127,7 @@ export const generateImportantQuestions = async (chapter: string, studentClass: 
   
   Return the results as a JSON array of objects with the following keys: "text", "difficulty", "year".
   
-  Note: The chapter name and questions are in Bengali (বাংলা). Please ensure accurate generation and use ONLY Bengali for the text, difficulty, and year fields.`;
+  Note: The chapter name, subject, and questions are in Bengali (বাংলা). Please ensure accurate generation and use ONLY Bengali for the text, difficulty, and year fields.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -158,7 +158,7 @@ export const generateImportantQuestions = async (chapter: string, studentClass: 
   }
 };
 
-export const searchBoardQuestions = async (board: string, chapter: string, studentClass: string): Promise<{ questions: Question[]; sources: { uri: string; title: string }[] }> => {
+export const searchBoardQuestions = async (board: string, chapter: string, studentClass: string, subject: string): Promise<{ questions: Question[]; sources: { uri: string; title: string }[] }> => {
   if (!API_KEY) {
     throw new Error("Gemini API key is missing.");
   }
@@ -167,7 +167,7 @@ export const searchBoardQuestions = async (board: string, chapter: string, stude
   const currentYear = new Date().getFullYear();
   const startYear = currentYear - 10;
   
-  const prompt = `Search for ${board} board Class ${studentClass} questions for the chapter "${chapter}" from the last 10 years (${startYear} to ${currentYear}). 
+  const prompt = `Search for ${board} board Subject: "${subject}", Class ${studentClass} questions for the chapter "${chapter}" from the last 10 years (${startYear} to ${currentYear}). 
   Find actual questions asked in previous year exams (PYQs).
   
   For each question found:
@@ -177,7 +177,7 @@ export const searchBoardQuestions = async (board: string, chapter: string, stude
   
   Return the results as a JSON object with a "questions" key (array of objects with "text", "difficulty", "year") and a "sources" key (empty array, I will extract sources from grounding metadata).
   
-  Note: Use ONLY Bengali for text and difficulty.`;
+  Note: Use ONLY Bengali for text, subject, and difficulty.`;
 
   try {
     const response = await ai.models.generateContent({

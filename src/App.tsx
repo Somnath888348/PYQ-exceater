@@ -33,6 +33,7 @@ interface HistoryItem {
   id: string;
   chapter: string;
   studentClass: string;
+  subject: string;
   urls: string[];
   results: { url: string; questions: Question[] }[];
   timestamp: number;
@@ -168,7 +169,7 @@ function QuestionItem({ question, index, darkMode }: { question: Question; index
                   </div>
                   <button 
                     onClick={copyHint}
-                    className="p-1.5 rounded-lg hover:bg-amber-200/50 dark:hover:bg-amber-900/50 transition-colors opacity-0 group-hover/hint:opacity-100"
+                    className="p-1.5 rounded-lg hover:bg-amber-200/50 dark:hover:bg-amber-900/50 transition-colors opacity-40 group-hover/hint:opacity-100"
                   >
                     {hintCopied ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
                   </button>
@@ -195,7 +196,7 @@ function QuestionItem({ question, index, darkMode }: { question: Question; index
                   </div>
                   <button 
                     onClick={copySolution}
-                    className="p-1.5 rounded-lg hover:bg-indigo-200/50 dark:hover:bg-indigo-900/50 transition-colors opacity-0 group-hover/sol:opacity-100"
+                    className="p-1.5 rounded-lg hover:bg-indigo-200/50 dark:hover:bg-indigo-900/50 transition-colors opacity-40 group-hover/sol:opacity-100"
                   >
                     {solutionCopied ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
                   </button>
@@ -216,6 +217,7 @@ export default function App() {
   const [searchMode, setSearchMode] = useState<'link' | 'ai'>('link');
   const [urlsText, setUrlsText] = useState('');
   const [chapter, setChapter] = useState('');
+  const [subject, setSubject] = useState('Physics');
   const [board, setBoard] = useState('West Bengal Board');
   const [studentClass, setStudentClass] = useState('Class 12');
   const [loading, setLoading] = useState(false);
@@ -275,14 +277,14 @@ export default function App() {
       
       for (let i = 0; i < urls.length; i++) {
         setProgress({ current: i + 1, total: urls.length });
-        const questions = await extractQuestions(urls[i], chapter, studentClass);
+        const questions = await extractQuestions(urls[i], chapter, studentClass, subject);
         if (questions.length > 0) {
           allResults.push({ url: urls[i], questions });
         }
       }
 
       if (allResults.length === 0) {
-        setError(`"${chapter}" এর জন্য কোনো প্রশ্ন পাওয়া যায়নি। অনুগ্রহ করে সঠিক লিঙ্ক বা অধ্যায়ের নাম পরীক্ষা করুন।`);
+        setError(`"${chapter}" (${subject}) এর জন্য কোনো প্রশ্ন পাওয়া যায়নি। অনুগ্রহ করে সঠিক লিঙ্ক বা অধ্যায়ের নাম পরীক্ষা করুন।`);
       } else {
         setResults(allResults);
         
@@ -294,6 +296,7 @@ export default function App() {
           id: Math.random().toString(36).substr(2, 9),
           chapter,
           studentClass,
+          subject,
           urls,
           results: allResults,
           timestamp: Date.now(),
@@ -320,10 +323,10 @@ export default function App() {
     setSources(null);
 
     try {
-      const { questions, sources } = await searchBoardQuestions(board, chapter, studentClass);
+      const { questions, sources } = await searchBoardQuestions(board, chapter, studentClass, subject);
       
       if (questions.length === 0) {
-        setError(`"${chapter}" এর জন্য ${board} (${studentClass})-এ কোনো প্রশ্ন পাওয়া যায়নি।`);
+        setError(`"${chapter}" (${subject}) এর জন্য ${board} (${studentClass})-এ কোনো প্রশ্ন পাওয়া যায়নি।`);
       } else {
         setResults([{ url: `${board} ${studentClass} (Last 10 Years)`, questions }]);
         setSources(sources);
@@ -336,6 +339,7 @@ export default function App() {
           id: Math.random().toString(36).substr(2, 9),
           chapter: `${chapter} (${board} - ${studentClass})`,
           studentClass,
+          subject,
           urls: [`AI Search: ${board} ${studentClass}`],
           results: [{ url: `${board} ${studentClass} (Last 10 Years)`, questions }],
           timestamp: Date.now(),
@@ -353,7 +357,7 @@ export default function App() {
     if (!chapter) return;
     setLoadingImportant(true);
     try {
-      const questions = await generateImportantQuestions(chapter, studentClass);
+      const questions = await generateImportantQuestions(chapter, studentClass, subject);
       setImportantQuestions(questions);
     } catch (err) {
       console.error(err);
@@ -367,6 +371,7 @@ export default function App() {
     setImportantQuestions(null);
     setChapter(item.chapter);
     setStudentClass(item.studentClass || 'Class 12');
+    setSubject(item.subject || 'Physics');
     setUrlsText(item.urls.join('\n'));
     setError(null);
   };
@@ -378,7 +383,8 @@ export default function App() {
 
   const copyToClipboard = () => {
     if (!results) return;
-    const text = results.map(r => 
+    const text = `Subject: ${subject}\nChapter: ${chapter}\nClass: ${studentClass}\n\n` + 
+    results.map(r => 
       `Source: ${r.url}\n` + 
       r.questions.map(q => `- [${q.difficulty}] (${q.year || 'N/A'}) ${q.text}`).join('\n')
     ).join('\n\n');
@@ -402,7 +408,7 @@ export default function App() {
           <span className="font-black text-3xl tracking-tight text-slate-900">PYQ.ai</span>
         </div>
         <h1 className="text-4xl font-black mb-3">{board} • {studentClass}</h1>
-        <h2 className="text-2xl font-bold text-slate-700">অধ্যায়: {chapter}</h2>
+        <h2 className="text-2xl font-bold text-slate-700">বিষয়: {subject} | অধ্যায়: {chapter}</h2>
         <div className="flex justify-center gap-8 mt-6 text-sm font-bold text-slate-500 uppercase tracking-widest">
           <span>তারিখ: {new Date().toLocaleDateString('bn-BD')}</span>
           <span>মোট প্রশ্ন: {results?.reduce((acc, r) => acc + r.questions.length, 0) || 0}</span>
@@ -528,6 +534,8 @@ export default function App() {
                     <div className="flex items-center gap-2 opacity-50 text-[10px]">
                       <Clock size={10} />
                       <span>{new Date(item.timestamp).toLocaleDateString()}</span>
+                      <span>•</span>
+                      <span>{item.subject || 'Physics'}</span>
                       <span>•</span>
                       <span>{item.studentClass || 'Class 12'}</span>
                       <span>•</span>
@@ -682,6 +690,32 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* Subject Selection */}
+                    <div className="space-y-3">
+                      <label className={`text-sm font-bold flex items-center gap-2 transition-colors duration-300 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <BookOpen size={16} className="text-indigo-500" />
+                        বিষয় (Subject)
+                      </label>
+                      <select
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        className={`w-full px-5 py-4 rounded-2xl border transition-all text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 ${
+                          darkMode 
+                          ? 'bg-slate-800 border-slate-700 text-white focus:bg-slate-800' 
+                          : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white'
+                        }`}
+                      >
+                        <option value="Physics">Physics (পদার্থবিজ্ঞান)</option>
+                        <option value="Chemistry">Chemistry (রসায়ন)</option>
+                        <option value="Mathematics">Mathematics (গণিত)</option>
+                        <option value="Biology">Biology (জীববিজ্ঞান)</option>
+                        <option value="English">English (ইংরেজি)</option>
+                        <option value="Bengali">Bengali (বাংলা)</option>
+                        <option value="History">History (ইতিহাস)</option>
+                        <option value="Geography">Geography (ভূগোল)</option>
+                      </select>
+                    </div>
+
                     {/* Class Selection */}
                     <div className="space-y-3">
                       <label className={`text-sm font-bold flex items-center gap-2 transition-colors duration-300 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -757,6 +791,32 @@ export default function App() {
               ) : (
                 <form onSubmit={handleAISearch} className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* Subject Selection */}
+                    <div className="space-y-3">
+                      <label className={`text-sm font-bold flex items-center gap-2 transition-colors duration-300 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <BookOpen size={16} className="text-indigo-500" />
+                        বিষয় (Subject)
+                      </label>
+                      <select
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        className={`w-full px-5 py-4 rounded-2xl border transition-all text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 ${
+                          darkMode 
+                          ? 'bg-slate-800 border-slate-700 text-white focus:bg-slate-800' 
+                          : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white'
+                        }`}
+                      >
+                        <option value="Physics">Physics (পদার্থবিজ্ঞান)</option>
+                        <option value="Chemistry">Chemistry (রসায়ন)</option>
+                        <option value="Mathematics">Mathematics (গণিত)</option>
+                        <option value="Biology">Biology (জীববিজ্ঞান)</option>
+                        <option value="English">English (ইংরেজি)</option>
+                        <option value="Bengali">Bengali (বাংলা)</option>
+                        <option value="History">History (ইতিহাস)</option>
+                        <option value="Geography">Geography (ভূগোল)</option>
+                      </select>
+                    </div>
+
                     {/* Board Selection */}
                     <div className="space-y-3">
                       <label className={`text-sm font-bold flex items-center gap-2 transition-colors duration-300 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
