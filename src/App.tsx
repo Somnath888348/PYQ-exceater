@@ -34,6 +34,7 @@ interface HistoryItem {
   chapter: string;
   studentClass: string;
   subject: string;
+  board?: string;
   urls: string[];
   results: { url: string; questions: Question[] }[];
   timestamp: number;
@@ -328,7 +329,7 @@ export default function App() {
       if (questions.length === 0) {
         setError(`"${chapter}" (${subject}) এর জন্য ${board} (${studentClass})-এ কোনো প্রশ্ন পাওয়া যায়নি।`);
       } else {
-        setResults([{ url: `${board} ${studentClass} (Last 10 Years)`, questions }]);
+        setResults([{ url: `${subject} - ${board} ${studentClass} (Last 10 Years)`, questions }]);
         setSources(sources);
         
         // Automatically trigger important questions generation
@@ -337,11 +338,12 @@ export default function App() {
         // Add to history
         const newItem: HistoryItem = {
           id: Math.random().toString(36).substr(2, 9),
-          chapter: `${chapter} (${board} - ${studentClass})`,
+          chapter,
           studentClass,
           subject,
+          board,
           urls: [`AI Search: ${board} ${studentClass}`],
-          results: [{ url: `${board} ${studentClass} (Last 10 Years)`, questions }],
+          results: [{ url: `${subject} - ${board} ${studentClass} (Last 10 Years)`, questions }],
           timestamp: Date.now(),
         };
         setHistory(prev => [newItem, ...prev].slice(0, 20));
@@ -372,6 +374,7 @@ export default function App() {
     setChapter(item.chapter);
     setStudentClass(item.studentClass || 'Class 12');
     setSubject(item.subject || 'Physics');
+    setBoard(item.board || '');
     setUrlsText(item.urls.join('\n'));
     setError(null);
   };
@@ -407,7 +410,7 @@ export default function App() {
           </div>
           <span className="font-black text-3xl tracking-tight text-slate-900">PYQ.ai</span>
         </div>
-        <h1 className="text-4xl font-black mb-3">{board} • {studentClass}</h1>
+        <h1 className="text-4xl font-black mb-3">{board ? `${board} • ` : ''}{studentClass}</h1>
         <h2 className="text-2xl font-bold text-slate-700">বিষয়: {subject} | অধ্যায়: {chapter}</h2>
         <div className="flex justify-center gap-8 mt-6 text-sm font-bold text-slate-500 uppercase tracking-widest">
           <span>তারিখ: {new Date().toLocaleDateString('bn-BD')}</span>
@@ -530,12 +533,14 @@ export default function App() {
                   }`}
                 >
                   <div className="flex flex-col gap-1">
-                    <span className="font-bold text-sm truncate">{item.chapter}</span>
+                    <span className="font-bold text-sm truncate">
+                      {item.chapter} {item.board ? `(${item.board})` : ''}
+                    </span>
                     <div className="flex items-center gap-2 opacity-50 text-[10px]">
                       <Clock size={10} />
                       <span>{new Date(item.timestamp).toLocaleDateString()}</span>
                       <span>•</span>
-                      <span>{item.subject || 'Physics'}</span>
+                      <span className="text-indigo-500 font-bold">{item.subject || 'Physics'}</span>
                       <span>•</span>
                       <span>{item.studentClass || 'Class 12'}</span>
                       <span>•</span>
@@ -948,7 +953,9 @@ export default function App() {
                       </div>
                       <div>
                         <h3 className={`font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-900'}`}>ফলাফল প্রস্তুত</h3>
-                        <p className="text-xs text-slate-500 font-medium">এর জন্য পাওয়া গেছে: <span className="text-indigo-600 uppercase tracking-wider">{chapter}</span></p>
+                        <p className="text-xs text-slate-500 font-medium">
+                          এর জন্য পাওয়া গেছে: <span className="text-indigo-600 uppercase tracking-wider">{subject} | {chapter}</span>
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-2">
